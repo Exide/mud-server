@@ -1,5 +1,7 @@
 package org.arabellan.mud.server;
 
+import org.arabellan.mud.server.network.Listener;
+
 public class Main {
 
     public static void main(String[] args) {
@@ -7,6 +9,7 @@ public class Main {
     }
 
     private void run() {
-        System.out.println("It's up and running!");
+        Listener listener = new Listener();
+        listener.start();
     }
 }
