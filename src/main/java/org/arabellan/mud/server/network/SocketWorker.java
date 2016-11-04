@@ -16,6 +16,12 @@ import java.net.Socket;
 @Slf4j
 class SocketWorker implements Runnable {
 
+    private static final int IAC = 255;
+    private static final int DONT = 254;
+    private static final int DO = 253;
+    private static final int WONT = 252;
+    private static final int WILL = 251;
+
     private final Socket socket;
 
     SocketWorker(Socket socket) {
@@ -67,7 +73,7 @@ class SocketWorker implements Runnable {
             // only negotiate if we receive IAC
             input.mark(1);
             int nextByte = input.read();
-            if (nextByte != 255) {
+            if (nextByte != IAC) {
                 input.reset();
                 negotiating = false;
                 continue;
@@ -76,13 +82,10 @@ class SocketWorker implements Runnable {
             int command = input.read();
             int option = input.read();
 
-            output.write(255);
+            output.write(IAC);
 
-            // respond to DO with WONT
-            if (command == 253) output.write(252);
-
-            // respond to WILL with DONT
-            if (command == 251) output.write(254);
+            if (command == DO) output.write(WONT);
+            if (command == WILL) output.write(DONT);
 
             output.write(option);
             output.flush();
