@@ -24,7 +24,7 @@ public class Listener {
 
             while (!listenerSocket.isClosed()) {
                 Socket socket = listenerSocket.accept();
-                executor.execute(new SocketWorker(socket));
+                executor.execute(new Worker(socket));
             }
         } catch (IOException e) {
             throw new RuntimeException("Cannot open a listening socket on port " + PORT, e);

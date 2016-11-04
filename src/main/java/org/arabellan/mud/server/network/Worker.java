@@ -14,7 +14,7 @@ import java.io.OutputStreamWriter;
 import java.net.Socket;
 
 @Slf4j
-class SocketWorker implements Runnable {
+class Worker implements Runnable {
 
     private static final int IAC = 255;
     private static final int DONT = 254;
@@ -24,7 +24,7 @@ class SocketWorker implements Runnable {
 
     private final Socket socket;
 
-    SocketWorker(Socket socket) {
+    Worker(Socket socket) {
         this.socket = socket;
     }
 
