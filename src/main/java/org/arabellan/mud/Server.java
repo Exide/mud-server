@@ -37,7 +37,6 @@ public class Server {
 
     private void run() {
         EventBus eventBus = new EventBus();
-        CommandParser commandParser = new CommandParser(eventBus);
         workerThread.execute(new ConnectionWorker(eventBus));
         listenerThread.execute(new TelnetListener(socketQueue));
 
