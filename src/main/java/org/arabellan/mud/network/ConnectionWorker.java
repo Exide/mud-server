@@ -6,9 +6,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.arabellan.mud.events.ConnectionClosed;
 import org.arabellan.mud.events.ConnectionOpened;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * Responsibility:
@@ -18,9 +21,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class ConnectionWorker implements Runnable {
 
-    private boolean running = true;
     private final EventBus eventBus;
     private final Set<Connection> connections = ConcurrentHashMap.newKeySet();
+    private boolean running = true;
 
     public ConnectionWorker(EventBus eventBus) {
         this.eventBus = eventBus;
@@ -34,9 +37,25 @@ public class ConnectionWorker implements Runnable {
                 Queue<String> incomingMessages = connection.getIncomingMessageQueue();
                 while (incomingMessages.size() > 0) {
                     String message = incomingMessages.remove();
-                    log.info(connection.getClientAddress() + ": " + message);
+                    List<String> tokens = Arrays.stream(message.trim().split("\\s+")).collect(Collectors.toList());
+
+                    // gossip hack
+                    if (tokens.size() < 2) continue;
+                    String command = tokens.remove(0);
+                    String arguments = tokens.stream().collect(Collectors.joining(" "));
+                    if ("gossip".contains(command)) {
+                        sendToEveryone(arguments);
+                    }
                 }
             }
+        }
+    }
+
+    private void sendToEveryone(String message) {
+        log.trace("Sending to everyone: " + message);
+        for (Connection connection : connections) {
+            Queue<String> outgoingMessages = connection.getOutgoingMessageQueue();
+            outgoingMessages.add(message);
         }
     }
 
