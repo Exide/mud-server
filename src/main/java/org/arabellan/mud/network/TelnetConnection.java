@@ -1,9 +1,9 @@
-package org.arabellan.mud.server.network;
+package org.arabellan.mud.network;
 
 import com.google.common.eventbus.EventBus;
 import lombok.extern.slf4j.Slf4j;
-import org.arabellan.mud.server.events.ConnectionClosed;
-import org.arabellan.mud.server.events.ConnectionOpened;
+import org.arabellan.mud.events.ConnectionClosed;
+import org.arabellan.mud.events.ConnectionOpened;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;

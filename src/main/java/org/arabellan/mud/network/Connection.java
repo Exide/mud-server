@@ -1,4 +1,4 @@
-package org.arabellan.mud.server.network;
+package org.arabellan.mud.network;
 
 import lombok.Getter;
 

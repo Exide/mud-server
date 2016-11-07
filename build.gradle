@@ -22,7 +22,7 @@ dependencies {
 
 jar {
     manifest {
-        attributes "Main-Class": "org.arabellan.mud.server.Server"
+        attributes "Main-Class": "Server"
     }
 
     from {

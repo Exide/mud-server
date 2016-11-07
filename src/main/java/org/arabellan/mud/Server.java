@@ -1,28 +1,26 @@
-package org.arabellan.mud.server;
+package org.arabellan.mud;
 
 import com.google.common.eventbus.EventBus;
 import lombok.extern.slf4j.Slf4j;
-import org.arabellan.mud.server.network.Connection;
-import org.arabellan.mud.server.network.ConnectionWorker;
-import org.arabellan.mud.server.network.TelnetConnection;
-import org.arabellan.mud.server.network.TelnetListener;
+import org.arabellan.mud.network.Connection;
+import org.arabellan.mud.network.TelnetConnection;
+import org.arabellan.mud.network.ConnectionWorker;
+import org.arabellan.mud.network.TelnetListener;
+import org.arabellan.mud.utils.ThreadUtils;
 
 import java.net.Socket;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static org.arabellan.mud.server.utils.ThreadUtils.setThreadName;
-import static org.arabellan.mud.server.utils.ThreadUtils.setThreadNameWithID;
-
 @Slf4j
 public class Server {
 
     private static final int MAX_CONNECTIONS = 10;
 
-    private final ExecutorService listenerThread = Executors.newSingleThreadExecutor(setThreadName("listener"));
-    private final ExecutorService workerThread = Executors.newSingleThreadExecutor(setThreadName("worker"));
-    private final ExecutorService connectionThreadPool = Executors.newFixedThreadPool(MAX_CONNECTIONS, setThreadNameWithID("connection"));
+    private final ExecutorService listenerThread = Executors.newSingleThreadExecutor(ThreadUtils.setThreadName("listener"));
+    private final ExecutorService workerThread = Executors.newSingleThreadExecutor(ThreadUtils.setThreadName("worker"));
+    private final ExecutorService connectionThreadPool = Executors.newFixedThreadPool(MAX_CONNECTIONS, ThreadUtils.setThreadNameWithID("connection"));
     private final ConcurrentLinkedQueue<Socket> socketQueue;
 
     private Server() {
@@ -39,6 +37,7 @@ public class Server {
 
     private void run() {
         EventBus eventBus = new EventBus();
+        CommandParser commandParser = new CommandParser(eventBus);
         workerThread.execute(new ConnectionWorker(eventBus));
         listenerThread.execute(new TelnetListener(socketQueue));
 
