@@ -8,6 +8,7 @@ repositories {
 dependencies {
     compile 'org.projectlombok:lombok:1.+'
     compile 'com.google.code.gson:gson:2.+'
+    compile 'com.google.guava:guava:20.+'
 
     // logging
     compile 'org.slf4j:slf4j-api:1.+'
@@ -21,7 +22,7 @@ dependencies {
 
 jar {
     manifest {
-        attributes "Main-Class": "org.arabellan.mud.server.Main"
+        attributes "Main-Class": "org.arabellan.mud.server.Server"
     }
 
     from {
