@@ -83,7 +83,7 @@ public class TelnetConnection extends Connection {
             BufferedReader reader = new BufferedReader(inputStreamReader);
             while (reader.ready()) {
                 String message = reader.readLine();
-                log.debug("Incoming message: " + message);
+                log.debug("Received: " + message);
                 incomingMessageQueue.add(message);
             }
         } catch (IOException e) {
@@ -99,6 +99,7 @@ public class TelnetConnection extends Connection {
             while (outgoingMessageQueue.size() > 0) {
                 String message = outgoingMessageQueue.remove();
                 writer.write(message + "\r\n");
+                log.debug("Sent: " + message);
             }
             writer.flush();
         } catch (IOException e) {
