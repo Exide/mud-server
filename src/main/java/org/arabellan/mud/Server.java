@@ -31,7 +31,7 @@ public class Server {
         try {
             new Server().run();
         } catch (Exception e) {
-            throw new RuntimeException("An error occured that we can't recover from", e);
+            throw new RuntimeException("An error occurred that we can't recover from", e);
         }
     }
 
