@@ -3,66 +3,37 @@ package org.arabellan.mud.network;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
-/**
- * Responsibility:
- * Listen for incoming Telnet connections and place them on the queue
- */
+import java.net.InetSocketAddress;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.util.Queue;
 
 @Slf4j
 public class TelnetListener implements Runnable {
 
-    private static final int PORT = 23;
+    private static final int TELNET_PORT = 2323;
 
-    private final ConcurrentLinkedQueue<Socket> socketQueue;
-    private ServerSocket listenerSocket;
-    private boolean listening = true;
+    private final Queue<Socket> socketQueue;
 
-    public TelnetListener(ConcurrentLinkedQueue<Socket> socketQueue) {
+    public TelnetListener(Queue<Socket> socketQueue) {
         this.socketQueue = socketQueue;
     }
 
     public void run() {
-        openListenerSocket();
-        log.info("Listening on " + listenerSocket.getInetAddress() + ":" + PORT);
-
-        while (listening) {
-            Socket socket = acceptClientSocket(listenerSocket);
-            log.info("Accepting connection from " + socket.getInetAddress().getHostAddress());
-            socketQueue.add(socket);
-        }
-
-        closeListenerSocket();
-    }
-
-    public void stop() {
-        listening = false;
-    }
-
-    private void openListenerSocket() {
         try {
-            listenerSocket = new ServerSocket(PORT);
-        } catch (IOException e) {
-            throw new RuntimeException("Error opening listener socket", e);
-        }
-    }
+            ServerSocketChannel listenerSocket = ServerSocketChannel.open();
+            InetSocketAddress socketAddress = new InetSocketAddress(TELNET_PORT);
+            listenerSocket.bind(socketAddress);
+            log.info("Listening on " + socketAddress.toString());
 
-    private Socket acceptClientSocket(ServerSocket listenerSocket) {
-        try {
-            return listenerSocket.accept();
+            while (true) {
+                SocketChannel socketChannel = listenerSocket.accept();
+                Socket socket = new Socket(socketChannel, Socket.Protocol.TELNET);
+                log.info("Socket opened: " + socket.getId());
+                socketQueue.add(socket);
+            }
         } catch (IOException e) {
-            throw new RuntimeException("Error accepting socket", e);
-        }
-    }
-
-    private void closeListenerSocket() {
-        try {
-            listenerSocket.close();
-        } catch (IOException e) {
-            throw new RuntimeException("Error closing listener socket", e);
+            throw new RuntimeException(e);
         }
     }
 }
