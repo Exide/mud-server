@@ -131,7 +131,7 @@ public class SocketProcessor implements Runnable {
                     Socket socket = (Socket) key.attachment();
                     ByteBuffer message = socket.getOutgoingQueue().poll();
 
-                    if (message != null && !message.hasRemaining()) {
+                    if (message != null && message.hasRemaining()) {
 
                         if (socket.getProtocol() == Socket.Protocol.TELNET && !TelnetProtocol.nextByteIAC(message)) {
                             log.debug("To " + socket.getId() + ": " + StringUtils.fromByteBuffer(message));
