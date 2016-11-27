@@ -92,7 +92,7 @@ public class SocketProcessor implements Runnable {
 
                     buffer.flip();
 
-                    while (buffer.remaining() != 0) {
+                    while (!buffer.hasRemaining()) {
                         if (TelnetProtocol.nextByteIAC(buffer)) {
                             ByteBuffer request = TelnetProtocol.extractTelnetCommand(buffer);
                             ByteBuffer response = TelnetProtocol.parseTelnetCommand(request);
@@ -130,7 +130,7 @@ public class SocketProcessor implements Runnable {
                     Socket socket = (Socket) key.attachment();
                     ByteBuffer message = socket.getOutgoingQueue().poll();
 
-                    if (message != null && message.remaining() > 0) {
+                    if (message != null && message.hasRemaining()) {
 
                         if (socket.getProtocol() == Socket.Protocol.TELNET && !TelnetProtocol.nextByteIAC(message)) {
                             log.debug("To " + socket.getId() + ": " + StringUtils.fromByteBuffer(message));
