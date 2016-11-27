@@ -92,25 +92,25 @@ public class SocketProcessor implements Runnable {
 
                     buffer.flip();
 
-                    if (buffer.remaining() == 0) return;
-
-                    // TODO: move this to its own method somewhere
-                    if (socket.getProtocol() == Socket.Protocol.TELNET) {
-                        if (TelnetProtocol.startsWithTelnetCommand(buffer)) {
-                            while (buffer.remaining() > 0) {
-                                ByteBuffer request = TelnetProtocol.extractTelnetCommand(buffer);
-                                ByteBuffer response = TelnetProtocol.parseTelnetCommand(request);
-                                socket.addWriteSelector(writeSelector);
-                                socket.getOutgoingQueue().add(response);
-                            }
+                    while (buffer.remaining() != 0) {
+                        if (TelnetProtocol.nextByteIAC(buffer)) {
+                            ByteBuffer request = TelnetProtocol.extractTelnetCommand(buffer);
+                            ByteBuffer response = TelnetProtocol.parseTelnetCommand(request);
+                            socket.addWriteSelector(writeSelector);
+                            socket.getOutgoingQueue().add(response);
+                        } else {
+                            byte[] bytes = new byte[buffer.limit()];
+                            buffer.get(bytes);
+                            String output = new String(bytes);
+                            String trimmedOutput = output.trim();
+                            log.debug("From " + socket.getId() + ": " + trimmedOutput);
+                            trimmedOutput += "\r\n";
+                            ByteBuffer outputBuffer = ByteBuffer.allocate(trimmedOutput.length());
+                            outputBuffer.put(trimmedOutput.getBytes());
+                            IncomingMessageEvent message = new IncomingMessageEvent(socket.getId(), outputBuffer);
+                            eventBus.post(message);
                         }
                     }
-
-                    if (buffer.remaining() == 0) return;
-
-                    log.debug("From " + socket.getId() + ": " + StringUtils.fromByteBuffer(buffer));
-                    IncomingMessageEvent message = new IncomingMessageEvent(socket.getId(), buffer);
-                    eventBus.post(message);
                 }
 
                 keys.clear();
@@ -130,13 +130,9 @@ public class SocketProcessor implements Runnable {
                     Socket socket = (Socket) key.attachment();
                     ByteBuffer message = socket.getOutgoingQueue().poll();
 
-                    log.debug("Socket " + socket.getId() + " write selected");
+                    if (message != null && message.remaining() > 0) {
 
-                    if (message != null) {
-
-                        if (socket.getProtocol() == Socket.Protocol.TELNET && TelnetProtocol.startsWithTelnetCommand(message)) {
-                            log.debug("Sending telnet command response");
-                        } else {
+                        if (socket.getProtocol() == Socket.Protocol.TELNET && !TelnetProtocol.nextByteIAC(message)) {
                             log.debug("To " + socket.getId() + ": " + StringUtils.fromByteBuffer(message));
                         }
 
