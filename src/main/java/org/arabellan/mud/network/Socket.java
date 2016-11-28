@@ -41,7 +41,7 @@ public class Socket {
     void addReadSelector(Selector selector) {
         try {
             readSelectionKey = socketChannel.register(selector, OP_READ, this);
-            log.debug("Read selector added");
+            log.trace("Socket " + id + " added read selector");
         } catch (ClosedChannelException e) {
             setState(State.CLOSED);
         }
@@ -51,7 +51,7 @@ public class Socket {
         try {
             if (writeSelectionKey == null) {
                 writeSelectionKey = socketChannel.register(selector, OP_WRITE, this);
-                log.debug("Write selector added");
+                log.trace("Socket " + id + " added write selector");
             }
         } catch (ClosedChannelException e) {
             setState(State.CLOSED);
@@ -62,7 +62,7 @@ public class Socket {
         writeSelectionKey.attach(null);
         writeSelectionKey.cancel();
         writeSelectionKey = null;
-        log.debug("Write selector removed");
+        log.trace("Socket " + id + " removed write selector");
     }
 
     void setNonBlockingMode() {
