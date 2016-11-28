@@ -249,8 +249,7 @@ public class SocketProcessor implements Runnable {
         public void handle(OutgoingMessageEvent event) {
             log.trace("Handling OutgoingMessageEvent");
             Socket socket = socketMap.get(event.getId());
-            socket.getOutgoingQueue().add(event.getBuffer());
-            socket.addWriteSelector(writeSelector);
+            socket.send(event.getBuffer(), writeSelector);
         }
     }
 
@@ -259,12 +258,7 @@ public class SocketProcessor implements Runnable {
         public void handle(BroadcastMessageEvent event) {
             log.trace("Handling BroadcastMessageEvent");
             for (Socket socket : socketMap.values()) {
-                ByteBuffer clone = ByteBuffer.allocate(event.getBuffer().remaining());
-                clone.put(event.getBuffer());
-                event.getBuffer().rewind();
-                clone.flip();
-                socket.getOutgoingQueue().add(clone);
-                socket.addWriteSelector(writeSelector);
+                socket.send(event.getBuffer(), writeSelector);
             }
         }
     }

@@ -74,6 +74,15 @@ public class Socket {
         }
     }
 
+    void send(ByteBuffer buffer, Selector writeSelector) {
+        ByteBuffer clone = ByteBuffer.allocate(buffer.remaining());
+        clone.put(buffer);
+        buffer.rewind();
+        clone.flip();
+        outgoingQueue.add(clone);
+        addWriteSelector(writeSelector);
+    }
+
     enum State {
         OPEN, CLOSED
     }
