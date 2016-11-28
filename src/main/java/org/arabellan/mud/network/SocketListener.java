@@ -9,27 +9,27 @@ import java.nio.channels.SocketChannel;
 import java.util.Queue;
 
 @Slf4j
-public class TelnetListener implements Runnable {
+public class SocketListener implements Runnable {
 
-    private static final int TELNET_PORT = 2323;
-
+    private final int port;
     private final Queue<Socket> socketQueue;
 
-    public TelnetListener(Queue<Socket> socketQueue) {
+    public SocketListener(int port, Queue<Socket> socketQueue) {
+        this.port = port;
         this.socketQueue = socketQueue;
     }
 
     public void run() {
         try {
             ServerSocketChannel listenerSocket = ServerSocketChannel.open();
-            InetSocketAddress socketAddress = new InetSocketAddress(TELNET_PORT);
+            InetSocketAddress socketAddress = new InetSocketAddress(port);
             listenerSocket.bind(socketAddress);
             log.info("Listening on " + socketAddress.toString());
 
             while (true) {
                 SocketChannel socketChannel = listenerSocket.accept();
-                Socket socket = new Socket(socketChannel, Socket.Protocol.TELNET);
-                log.info("Socket opened: " + socket.getId());
+                Socket socket = new Socket(socketChannel);
+                log.info("Socket accepted: " + socket.getId());
                 socketQueue.add(socket);
             }
         } catch (IOException e) {

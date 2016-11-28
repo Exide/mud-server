@@ -20,15 +20,13 @@ import static java.nio.channels.SelectionKey.OP_WRITE;
 public class Socket {
     int id;
     State state;
-    Protocol protocol;
     SocketChannel socketChannel;
     SelectionKey readSelectionKey;
     SelectionKey writeSelectionKey;
     Queue<ByteBuffer> outgoingQueue = new LinkedList<>();
 
-    Socket(SocketChannel socketChannel, Protocol protocol) {
+    Socket(SocketChannel socketChannel) {
         this.id = socketChannel.hashCode();
-        this.protocol = protocol;
         this.socketChannel = socketChannel;
         setState(State.OPEN);
     }
@@ -85,9 +83,5 @@ public class Socket {
 
     enum State {
         OPEN, CLOSED
-    }
-
-    enum Protocol {
-        TELNET
     }
 }
