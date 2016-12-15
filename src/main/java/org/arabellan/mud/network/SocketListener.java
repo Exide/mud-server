@@ -12,11 +12,11 @@ import java.util.Queue;
 public class SocketListener implements Runnable {
 
     private final int port;
-    private final Queue<Socket> socketQueue;
+    private final Queue<Connection> connectionQueue;
 
-    public SocketListener(int port, Queue<Socket> socketQueue) {
+    public SocketListener(int port, Queue<Connection> connectionQueue) {
         this.port = port;
-        this.socketQueue = socketQueue;
+        this.connectionQueue = connectionQueue;
     }
 
     public void run() {
@@ -28,9 +28,9 @@ public class SocketListener implements Runnable {
 
             while (true) {
                 SocketChannel socketChannel = listenerSocket.accept();
-                Socket socket = new Socket(socketChannel);
-                log.info("Socket accepted: " + socket.getId());
-                socketQueue.add(socket);
+                Connection connection = new TelnetConnection(socketChannel);
+                log.info("Connection accepted: " + connection.getId());
+                connectionQueue.add(connection);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);

@@ -1,4 +1,4 @@
-package org.arabellan.mud.utils;
+package org.arabellan.utils;
 
 import java.util.concurrent.ThreadFactory;
 
