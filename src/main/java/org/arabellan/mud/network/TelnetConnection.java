@@ -6,7 +6,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
+import static org.arabellan.utils.ConversionUtils.convertBufferToString;
 import static org.arabellan.utils.ConversionUtils.convertByteToInt;
+import static org.arabellan.utils.ConversionUtils.convertByteToString;
+import static org.arabellan.utils.ConversionUtils.convertStringToBuffer;
 
 /**
  * Socket communication utilizing the Telnet specification
@@ -61,7 +64,8 @@ class TelnetConnection extends Connection {
             while (buffer.hasRemaining()) {
                 if (nextByteIAC(buffer)) {
                     ByteBuffer response = handleTelnetCommand(buffer);
-                    outgoingQueue.add(response);
+                    String message = convertBufferToString(response);
+                    outgoingQueue.add(message);
                 } else {
                     byte[] bytes = new byte[buffer.limit()];
                     buffer.get(bytes);
@@ -83,17 +87,16 @@ class TelnetConnection extends Connection {
     @Override
     void write() {
         try {
-            ByteBuffer buffer = outgoingQueue.poll();
+            String message = outgoingQueue.poll();
 
-            if (buffer != null && buffer.hasRemaining()) {
+            if (message != null) {
 
-                byte[] bytes = new byte[buffer.limit()];
-                buffer.get(bytes);
-                buffer.rewind();
-                String output = new String(bytes);
-                String trimmedOutput = output.trim();
-                log.debug("To " + id + ": " + trimmedOutput);
+                if (!message.startsWith(convertByteToString(INTERPRET_AS_COMMAND))) {
+                    String trimmedMessage = message.trim();
+                    log.debug("To " + id + ": " + trimmedMessage);
+                }
 
+                ByteBuffer buffer = convertStringToBuffer(message);
                 socketChannel.write(buffer);
             }
 

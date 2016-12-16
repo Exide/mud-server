@@ -4,7 +4,6 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -21,7 +20,7 @@ public abstract class Connection {
 
     protected int id;
     protected SocketChannel socketChannel;
-    protected Queue<ByteBuffer> outgoingQueue = new LinkedList<>();
+    protected Queue<String> outgoingQueue = new LinkedList<>();
     protected Queue<String> incomingQueue = new LinkedList<>();
 
     private boolean isClosed;
@@ -91,8 +90,7 @@ public abstract class Connection {
 
     void send(String message) {
         message += "\r\n";
-        ByteBuffer buffer = ByteBuffer.wrap(message.getBytes());
-        outgoingQueue.add(buffer);
+        outgoingQueue.add(message);
         queueForWrite();
     }
 }

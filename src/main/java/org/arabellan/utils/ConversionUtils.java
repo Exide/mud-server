@@ -18,4 +18,15 @@ public class ConversionUtils {
         buffer.get(bytes);
         return new String(bytes);
     }
+
+    public static ByteBuffer convertStringToBuffer(String string) {
+        ByteBuffer buffer = ByteBuffer.allocate(string.getBytes().length);
+        buffer.put(string.getBytes());
+        buffer.flip();
+        return buffer;
+    }
+
+    public static String convertByteToString(byte b) {
+        return new String(new byte[]{b});
+    }
 }
