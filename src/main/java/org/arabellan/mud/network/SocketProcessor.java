@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
+import static java.util.Objects.nonNull;
 import static org.arabellan.utils.ConversionUtils.convertBufferToString;
 
 @Slf4j
@@ -77,9 +78,13 @@ public class SocketProcessor implements Runnable {
                 for (SelectionKey key : keys) {
                     Connection connection = (Connection) key.attachment();
                     connection.read();
-                    connection.getIncomingQueue().stream()
-                            .map(buffer -> new IncomingMessageEvent(connection.getId(), buffer))
-                            .forEach(eventBus::post);
+
+                    // post all incoming messages to the event bus
+                    String message = connection.getIncomingQueue().poll();
+                    while (nonNull(message)) {
+                        eventBus.post(new IncomingMessageEvent(connection.getId(), message));
+                        message = connection.getIncomingQueue().poll();
+                    }
                 }
 
                 keys.clear();

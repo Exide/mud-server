@@ -22,7 +22,7 @@ public abstract class Connection {
     protected int id;
     protected SocketChannel socketChannel;
     protected Queue<ByteBuffer> outgoingQueue = new LinkedList<>();
-    protected Queue<ByteBuffer> incomingQueue = new LinkedList<>();
+    protected Queue<String> incomingQueue = new LinkedList<>();
 
     private boolean isClosed;
     private Selector readSelector;

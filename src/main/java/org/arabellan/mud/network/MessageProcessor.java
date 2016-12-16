@@ -4,9 +4,7 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import lombok.extern.slf4j.Slf4j;
 
-import java.nio.ByteBuffer;
-
-import static org.arabellan.utils.ConversionUtils.convertBufferToString;
+import java.util.regex.Matcher;
 
 @Slf4j
 public class MessageProcessor implements Runnable {
@@ -27,12 +25,12 @@ public class MessageProcessor implements Runnable {
         @Subscribe
         public void handle(IncomingMessageEvent event) {
             log.trace("Handling IncomingMessageEvent");
-            ByteBuffer buffer = event.getBuffer();
-            String message = convertBufferToString(buffer);
 
             // parse gossip messages
-            if (GossipEvent.match(message)) {
-                eventBus.post(new GossipEvent(event.getId(), message));
+            Matcher matcher = GossipEvent.GOSSIP_PATTERN.matcher(event.getMessage());
+            if (matcher.matches()) {
+                String gossip = matcher.group(1);
+                eventBus.post(new GossipEvent(event.getId(), gossip));
             }
         }
     }

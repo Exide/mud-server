@@ -57,22 +57,18 @@ class TelnetConnection extends Connection {
             }
 
             buffer.flip();
-            byte[] bytes = new byte[buffer.limit()];
-            buffer.get(bytes);
-            buffer.rewind();
-            String input = new String(bytes);
-            String trimmedInput = input.trim();
-            log.debug("From " + id + ": " + trimmedInput);
 
             while (buffer.hasRemaining()) {
                 if (nextByteIAC(buffer)) {
                     ByteBuffer response = handleTelnetCommand(buffer);
                     outgoingQueue.add(response);
                 } else {
-                    ByteBuffer clonedBuffer = ByteBuffer.allocate(buffer.remaining());
-                    clonedBuffer.put(buffer);
-                    clonedBuffer.flip();
-                    incomingQueue.add(clonedBuffer);
+                    byte[] bytes = new byte[buffer.limit()];
+                    buffer.get(bytes);
+                    String input = new String(bytes);
+                    String trimmedInput = input.trim();
+                    log.debug("From " + id + ": " + trimmedInput);
+                    incomingQueue.add(trimmedInput);
                 }
             }
 
