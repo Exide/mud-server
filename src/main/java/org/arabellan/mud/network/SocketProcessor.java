@@ -12,7 +12,6 @@ import java.util.Queue;
 import java.util.Set;
 
 import static java.util.Objects.nonNull;
-import static org.arabellan.utils.ConversionUtils.convertBufferToString;
 
 @Slf4j
 public class SocketProcessor implements Runnable {
@@ -117,8 +116,7 @@ public class SocketProcessor implements Runnable {
         public void handle(OutgoingMessageEvent event) {
             log.trace("Handling OutgoingMessageEvent");
             Connection connection = connectionMap.get(event.getId());
-            String message = convertBufferToString(event.getBuffer());
-            connection.send(message);
+            connection.send(event.getMessage());
         }
     }
 

@@ -31,6 +31,8 @@ public class MessageProcessor implements Runnable {
             if (matcher.matches()) {
                 String gossip = matcher.group(1);
                 eventBus.post(new GossipEvent(event.getId(), gossip));
+            } else {
+                eventBus.post(new OutgoingMessageEvent(event.getId(), "Your command had no effect."));
             }
         }
     }
