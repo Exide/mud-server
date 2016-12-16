@@ -11,6 +11,8 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
+import static org.arabellan.utils.ConversionUtils.convertBufferToString;
+
 @Slf4j
 public class SocketProcessor implements Runnable {
 
@@ -110,16 +112,17 @@ public class SocketProcessor implements Runnable {
         public void handle(OutgoingMessageEvent event) {
             log.trace("Handling OutgoingMessageEvent");
             Connection connection = connectionMap.get(event.getId());
-            connection.send(event.getBuffer());
+            String message = convertBufferToString(event.getBuffer());
+            connection.send(message);
         }
     }
 
     private class BroadcastMessageHandler {
         @Subscribe
-        public void handle(BroadcastMessageEvent event) {
-            log.trace("Handling BroadcastMessageEvent");
+        public void handle(GossipEvent event) {
+            log.trace("Handling GossipEvent");
             for (Connection connection : connectionMap.values()) {
-                connection.send(event.getBuffer());
+                connection.send(event.getMessage());
             }
         }
     }

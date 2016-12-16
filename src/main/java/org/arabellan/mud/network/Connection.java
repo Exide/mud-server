@@ -89,12 +89,10 @@ public abstract class Connection {
         }
     }
 
-    void send(ByteBuffer buffer) {
-        ByteBuffer clone = ByteBuffer.allocate(buffer.remaining());
-        clone.put(buffer);
-        buffer.rewind();
-        clone.flip();
-        outgoingQueue.add(clone);
+    void send(String message) {
+        message += "\r\n";
+        ByteBuffer buffer = ByteBuffer.wrap(message.getBytes());
+        outgoingQueue.add(buffer);
         queueForWrite();
     }
 }
