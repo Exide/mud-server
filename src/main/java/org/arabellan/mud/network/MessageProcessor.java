@@ -4,6 +4,8 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.Duration;
+import java.time.LocalTime;
 import java.util.regex.Matcher;
 
 @Slf4j
@@ -17,7 +19,16 @@ public class MessageProcessor implements Runnable {
     }
 
     public void run() {
+        boolean threeSecondsPassed;
+        LocalTime lastTick = LocalTime.now();
+
         while (true) {
+            LocalTime now = LocalTime.now();
+            threeSecondsPassed = Duration.between(lastTick, now).getSeconds() >= 3;
+            if (threeSecondsPassed) {
+                eventBus.post(new BroadcastEvent("\btick!"));
+                lastTick = now;
+            }
         }
     }
 

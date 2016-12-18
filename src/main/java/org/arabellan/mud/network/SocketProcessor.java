@@ -28,7 +28,8 @@ public class SocketProcessor implements Runnable {
         this.connectionMap = connectionMap;
         this.eventBus = eventBus;
         this.eventBus.register(new OutgoingMessageHandler());
-        this.eventBus.register(new BroadcastMessageHandler());
+        this.eventBus.register(new BroadcastHandler());
+        this.eventBus.register(new GossipHandler());
     }
 
     public void run() {
@@ -120,7 +121,17 @@ public class SocketProcessor implements Runnable {
         }
     }
 
-    private class BroadcastMessageHandler {
+    private class BroadcastHandler {
+        @Subscribe
+        public void handle(BroadcastEvent event) {
+            log.trace("Handling BroadcastEvent");
+            for (Connection connection : connectionMap.values()) {
+                connection.send(event.getMessage());
+            }
+        }
+    }
+
+    private class GossipHandler {
         @Subscribe
         public void handle(GossipEvent event) {
             log.trace("Handling GossipEvent");
