@@ -188,6 +188,8 @@ public class Connection {
                     log.debug("To " + id + ": " + trimmedMessage);
                 }
 
+                message += ":";
+
                 ByteBuffer buffer = convertStringToBuffer(message);
                 socketChannel.write(buffer);
             }
