@@ -44,6 +44,8 @@ public class MessageProcessor implements Runnable {
                 eventBus.post(new GossipEvent(event.getId(), gossip));
             } else if (event.getMessage().length() > 0) {
                 eventBus.post(new OutgoingMessageEvent(event.getId(), "Your command had no effect."));
+            } else if (event.getMessage().length() == 0) {
+                eventBus.post(new OutgoingMessageEvent(event.getId(), ""));
             }
         }
     }
