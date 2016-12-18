@@ -28,7 +28,7 @@ public class SocketListener implements Runnable {
 
             while (true) {
                 SocketChannel socketChannel = listenerSocket.accept();
-                Connection connection = new TelnetConnection(socketChannel);
+                Connection connection = new Connection(socketChannel);
                 log.info("Connection accepted: " + connection.getId());
                 connectionQueue.add(connection);
             }
