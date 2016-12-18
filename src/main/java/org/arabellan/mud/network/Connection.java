@@ -13,6 +13,7 @@ import java.util.Queue;
 
 import static java.nio.channels.SelectionKey.OP_READ;
 import static java.nio.channels.SelectionKey.OP_WRITE;
+import static java.util.Objects.nonNull;
 
 @Slf4j
 @Data
@@ -66,17 +67,21 @@ public abstract class Connection {
     }
 
     void dequeueForRead() {
-        readSelectionKey.attach(null);
-        readSelectionKey.cancel();
-        readSelectionKey = null;
-        log.trace("Connection " + id + " removed from read selector");
+        if (nonNull(readSelectionKey)) {
+            readSelectionKey.attach(null);
+            readSelectionKey.cancel();
+            readSelectionKey = null;
+            log.trace("Connection " + id + " removed from read selector");
+        }
     }
 
     void dequeueForWrite() {
-        writeSelectionKey.attach(null);
-        writeSelectionKey.cancel();
-        writeSelectionKey = null;
-        log.trace("Connection " + id + " removed from write selector");
+        if (nonNull(writeSelectionKey)) {
+            writeSelectionKey.attach(null);
+            writeSelectionKey.cancel();
+            writeSelectionKey = null;
+            log.trace("Connection " + id + " removed from write selector");
+        }
     }
 
     void setNonBlockingMode() {
