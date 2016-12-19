@@ -26,7 +26,7 @@ public class MessageProcessor implements Runnable {
             LocalTime now = LocalTime.now();
             threeSecondsPassed = Duration.between(lastTick, now).getSeconds() >= 3;
             if (threeSecondsPassed) {
-                eventBus.post(new BroadcastEvent("\btick!"));
+                eventBus.post(new BroadcastEvent("tick!"));
                 lastTick = now;
             }
         }

@@ -60,10 +60,7 @@ public class SocketProcessor implements Runnable {
         Connection connection = connectionQueue.poll();
         while (connection != null) {
             log.info("Connection accepted: " + connection.getId());
-            connection.setNonBlockingMode();
-            connection.setReadSelector(readSelector);
-            connection.setWriteSelector(writeSelector);
-            connection.queueForRead();
+            connection.initialize(readSelector, writeSelector);
             connectionMap.put(connection.getId(), connection);
             connection = connectionQueue.poll();
         }
