@@ -92,12 +92,35 @@ public class Connection {
     private SelectionKey writeSelectionKey;
 
     private List<Byte> characterBuffer = new ArrayList<>();
+    private String prompt = "[HP=0/KAI=0]:";
 
     Connection(SocketChannel socketChannel) {
         this.id = socketChannel.hashCode();
         this.socketChannel = socketChannel;
         this.isClosed = false;
         traceClass();
+    }
+
+    public void initialize(Selector readSelector, Selector writeSelector) {
+        setNonBlockingMode();
+        setReadSelector(readSelector);
+        setWriteSelector(writeSelector);
+        queueForRead();
+
+        queueTelnetOption(DONT, OPTION_ECHO);
+        queueTelnetOption(WILL, OPTION_ECHO);
+        queueTelnetOption(DO, OPTION_SUPRESS_GO_AHEAD);
+        queueTelnetOption(WILL, OPTION_SUPRESS_GO_AHEAD);
+    }
+
+    private void queueTelnetOption(byte command, byte option) {
+        ByteBuffer telnetOption = ByteBuffer.allocate(3);
+        telnetOption.put(INTERPRET_AS_COMMAND);
+        telnetOption.put(command);
+        telnetOption.put(option);
+        telnetOption.flip();
+        OutgoingMessage message = new OutgoingMessage(telnetOption, true);
+        outgoingQueue.add(message);
     }
 
     void close() {
@@ -230,11 +253,28 @@ public class Connection {
                 if (message.isProtocolSpecific()) {
                     socketChannel.write(message.getBuffer());
                 } else {
-                    ByteBuffer buffer = addLineEndings(message.getBuffer());
+                    byte[] eraser = new byte[prompt.length() + characterBuffer.size()];
+                    Arrays.fill(eraser, SPACE);
 
-                    if (!characterBuffer.isEmpty()) {
-                        buffer = clearPrependPromptAndPrint(buffer);
-                    }
+                    int bufferSize = 0;
+                    bufferSize += 1; // carriage return
+                    bufferSize += eraser.length;
+                    bufferSize += 1; // carriage return
+                    bufferSize += message.getBuffer().limit();
+                    bufferSize += 2; // line ending
+                    bufferSize += prompt.getBytes().length;
+                    bufferSize += characterBuffer.size();
+
+                    ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
+                    buffer.put(CARRIAGE_RETURN);
+                    buffer.put(eraser);
+                    buffer.put(CARRIAGE_RETURN);
+                    buffer.put(message.getBuffer());
+                    buffer.put(CARRIAGE_RETURN);
+                    buffer.put(LINE_FEED);
+                    buffer.put(prompt.getBytes());
+                    buffer.put(convertByteListToByteArray(characterBuffer));
+                    buffer.flip();
 
                     socketChannel.write(buffer);
                 }
@@ -249,31 +289,6 @@ public class Connection {
             throw new RuntimeException("error occured writing to socket", e);
         }
 
-    }
-
-    private ByteBuffer clearPrependPromptAndPrint(ByteBuffer buffer) {
-        byte[] eraser = new byte[characterBuffer.size()];
-        Arrays.fill(eraser, SPACE);
-
-        int bufferSize = 1 + eraser.length + 1 + buffer.limit() + characterBuffer.size();
-        ByteBuffer output = ByteBuffer.allocate(bufferSize);
-        output.put(CARRIAGE_RETURN);
-        output.put(eraser);
-        output.put(CARRIAGE_RETURN);
-        output.put(buffer);
-        output.put(convertByteListToByteArray(characterBuffer));
-        output.flip();
-        return output;
-    }
-
-    private ByteBuffer addLineEndings(ByteBuffer buffer) {
-        int bufferSize = buffer.limit() + 2;
-        ByteBuffer output = ByteBuffer.allocate(bufferSize);
-        output.put(buffer);
-        output.put(CARRIAGE_RETURN);
-        output.put(LINE_FEED);
-        output.flip();
-        return output;
     }
 
     private void traceClass() {
@@ -395,29 +410,6 @@ public class Connection {
         output.flip();
 
         return output;
-    }
-
-    public void initialize(Selector readSelector, Selector writeSelector) {
-        setNonBlockingMode();
-        setReadSelector(readSelector);
-        setWriteSelector(writeSelector);
-        queueForRead();
-
-        queueTelnetOption(DONT, OPTION_ECHO);
-        queueTelnetOption(WILL, OPTION_ECHO);
-        queueTelnetOption(DO, OPTION_SUPRESS_GO_AHEAD);
-        queueTelnetOption(WILL, OPTION_SUPRESS_GO_AHEAD);
-        queueForWrite();
-    }
-
-    private void queueTelnetOption(byte command, byte option) {
-        ByteBuffer telnetOption = ByteBuffer.allocate(3);
-        telnetOption.put(INTERPRET_AS_COMMAND);
-        telnetOption.put(command);
-        telnetOption.put(option);
-        telnetOption.flip();
-        OutgoingMessage message = new OutgoingMessage(telnetOption, true);
-        outgoingQueue.add(message);
     }
 
     public void send(String text) {
