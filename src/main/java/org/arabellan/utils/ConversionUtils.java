@@ -49,7 +49,6 @@ public class ConversionUtils {
         for (int i = 0; i < collection.size(); ++i) {
             bytes[i] = collection.get(i);
         }
-        collection.clear();
         return bytes;
     }
 }

@@ -11,6 +11,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -19,10 +20,13 @@ import static java.nio.channels.SelectionKey.OP_READ;
 import static java.nio.channels.SelectionKey.OP_WRITE;
 import static java.util.Objects.nonNull;
 import static org.arabellan.utils.ConversionUtils.convertBufferToString;
+import static org.arabellan.utils.ConversionUtils.convertByteListToByteArray;
 import static org.arabellan.utils.ConversionUtils.convertByteListToString;
 import static org.arabellan.utils.ConversionUtils.convertByteToBuffer;
 import static org.arabellan.utils.ConversionUtils.convertByteToInt;
+import static org.arabellan.utils.ConversionUtils.convertByteToString;
 import static org.arabellan.utils.ConversionUtils.convertStringToBuffer;
+import static org.arabellan.utils.DebugUtils.traceCollectionSize;
 
 /**
  * Socket communication utilizing the Telnet specification
@@ -36,6 +40,7 @@ public class Connection {
 
     private static final byte LINE_FEED = (byte) 10;
     private static final byte CARRIAGE_RETURN = (byte) 13;
+    private static final byte SPACE = (byte) 32;
 
     private static final byte SUBNEGOTIATION_END = (byte) 240;
     private static final byte NO_OPERATION = (byte) 241;
@@ -69,7 +74,7 @@ public class Connection {
     private SocketChannel socketChannel;
 
     @Getter
-    private Queue<ByteBuffer> outgoingQueue = new LinkedList<>();
+    private Queue<OutgoingMessage> outgoingQueue = new LinkedList<>();
 
     @Getter
     private Queue<String> incomingQueue = new LinkedList<>();
@@ -92,6 +97,7 @@ public class Connection {
         this.id = socketChannel.hashCode();
         this.socketChannel = socketChannel;
         this.isClosed = false;
+        traceClass();
     }
 
     void close() {
@@ -147,13 +153,6 @@ public class Connection {
         }
     }
 
-    void send(String message) {
-        message += "\r\n";
-        ByteBuffer buffer = convertStringToBuffer(message);
-        outgoingQueue.add(buffer);
-        queueForWrite();
-    }
-
     void read() {
         try {
             ByteBuffer buffer = ByteBuffer.allocate(1024);
@@ -170,24 +169,42 @@ public class Connection {
             buffer.flip();
 
             while (buffer.hasRemaining()) {
+
                 if (isNextByte(INTERPRET_AS_COMMAND, buffer)) {
+                    log.trace("input: telnet command");
                     log.debug("From " + id + ": " + convertTelnetCommandToString(buffer));
                     ByteBuffer response = handleTelnetCommand(buffer);
-                    outgoingQueue.add(response);
+                    OutgoingMessage message = new OutgoingMessage(response, true);
+                    outgoingQueue.add(message);
                 } else if (isNextByte(CARRIAGE_RETURN, buffer)) {
-                    buffer.position(buffer.position() + 1);
+                    log.trace("input: carriage return");
+
                     String request = convertByteListToString(characterBuffer);
-                    log.debug("From " + id + ": " + request);
+                    characterBuffer.clear();
                     incomingQueue.add(request);
-                    outgoingQueue.add(convertByteToBuffer(CARRIAGE_RETURN));
-                } else if (isNextByte(LINE_FEED, buffer)) {
-                    buffer.position(buffer.position() + 1);
-                    outgoingQueue.add(convertByteToBuffer(LINE_FEED));
-                } else {
+                    log.debug("From " + id + ": " + request);
+
                     byte b = buffer.get();
+                    ByteBuffer response = convertByteToBuffer(b);
+                    OutgoingMessage message = new OutgoingMessage(response, true);
+                    outgoingQueue.add(message);
+                } else if (isNextByte(LINE_FEED, buffer)) {
+                    log.trace("input: line feed");
+                    byte b = buffer.get();
+                    ByteBuffer response = convertByteToBuffer(b);
+                    OutgoingMessage message = new OutgoingMessage(response, true);
+                    outgoingQueue.add(message);
+                } else {
+                    log.trace("input: character");
+                    byte b = buffer.get();
+                    log.debug("From " + id + ": " + convertByteToString(b));
                     characterBuffer.add(b);
-                    outgoingQueue.add(convertByteToBuffer(b));
+                    ByteBuffer response = convertByteToBuffer(b);
+                    OutgoingMessage message = new OutgoingMessage(response, true);
+                    outgoingQueue.add(message);
                 }
+
+                traceClass();
             }
 
             if (outgoingQueue.size() > 0) {
@@ -200,19 +217,29 @@ public class Connection {
 
     void write() {
         try {
-            ByteBuffer buffer = outgoingQueue.poll();
+            OutgoingMessage message = outgoingQueue.poll();
 
-            if (buffer != null && buffer.hasRemaining()) {
+            if (message != null && message.getBuffer().hasRemaining()) {
 
-                if (isNextByte(INTERPRET_AS_COMMAND, buffer)) {
-                    log.debug("To " + id + ": " + convertTelnetCommandToString(buffer));
+                if (isNextByte(INTERPRET_AS_COMMAND, message.getBuffer())) {
+                    log.debug("To " + id + ": " + convertTelnetCommandToString(message.getBuffer()));
                 } else {
-                    String message = convertBufferToString(buffer);
-                    String trimmedMessage = message.trim();
-                    log.debug("To " + id + ": " + trimmedMessage);
+                    log.debug("To " + id + ": " + convertBufferToString(message.getBuffer()));
                 }
 
-                socketChannel.write(buffer);
+                if (message.isProtocolSpecific()) {
+                    socketChannel.write(message.getBuffer());
+                } else {
+                    ByteBuffer buffer = addLineEndings(message.getBuffer());
+
+                    if (!characterBuffer.isEmpty()) {
+                        buffer = clearPrependPromptAndPrint(buffer);
+                    }
+
+                    socketChannel.write(buffer);
+                }
+
+                traceClass();
             }
 
             if (outgoingQueue.size() == 0) {
@@ -222,6 +249,37 @@ public class Connection {
             throw new RuntimeException("error occured writing to socket", e);
         }
 
+    }
+
+    private ByteBuffer clearPrependPromptAndPrint(ByteBuffer buffer) {
+        byte[] eraser = new byte[characterBuffer.size()];
+        Arrays.fill(eraser, SPACE);
+
+        int bufferSize = 1 + eraser.length + 1 + buffer.limit() + characterBuffer.size();
+        ByteBuffer output = ByteBuffer.allocate(bufferSize);
+        output.put(CARRIAGE_RETURN);
+        output.put(eraser);
+        output.put(CARRIAGE_RETURN);
+        output.put(buffer);
+        output.put(convertByteListToByteArray(characterBuffer));
+        output.flip();
+        return output;
+    }
+
+    private ByteBuffer addLineEndings(ByteBuffer buffer) {
+        int bufferSize = buffer.limit() + 2;
+        ByteBuffer output = ByteBuffer.allocate(bufferSize);
+        output.put(buffer);
+        output.put(CARRIAGE_RETURN);
+        output.put(LINE_FEED);
+        output.flip();
+        return output;
+    }
+
+    private void traceClass() {
+        traceCollectionSize("characterBuffer", characterBuffer);
+        traceCollectionSize("incomingQueue",incomingQueue);
+        traceCollectionSize("outgoingQueue",outgoingQueue);
     }
 
     private boolean isNextByte(byte isByte, ByteBuffer buffer) {
@@ -353,11 +411,20 @@ public class Connection {
     }
 
     private void queueTelnetOption(byte command, byte option) {
-        ByteBuffer enableServerSupressGoAhead = ByteBuffer.allocate(3);
-        enableServerSupressGoAhead.put(INTERPRET_AS_COMMAND);
-        enableServerSupressGoAhead.put(command);
-        enableServerSupressGoAhead.put(option);
-        enableServerSupressGoAhead.flip();
-        outgoingQueue.add(enableServerSupressGoAhead);
+        ByteBuffer telnetOption = ByteBuffer.allocate(3);
+        telnetOption.put(INTERPRET_AS_COMMAND);
+        telnetOption.put(command);
+        telnetOption.put(option);
+        telnetOption.flip();
+        OutgoingMessage message = new OutgoingMessage(telnetOption, true);
+        outgoingQueue.add(message);
+    }
+
+    public void send(String text) {
+        ByteBuffer buffer = convertStringToBuffer(text);
+        OutgoingMessage message = new OutgoingMessage(buffer);
+        outgoingQueue.add(message);
+        queueForWrite();
+
     }
 }
