@@ -3,6 +3,11 @@ package org.arabellan.mud.network;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import lombok.extern.slf4j.Slf4j;
+import org.arabellan.mud.events.BroadcastEvent;
+import org.arabellan.mud.events.GossipEvent;
+import org.arabellan.mud.events.IncomingMessageEvent;
+import org.arabellan.mud.events.LookRoomEvent;
+import org.arabellan.mud.events.OutgoingMessageEvent;
 
 import java.time.Duration;
 import java.time.LocalTime;
@@ -45,7 +50,7 @@ public class MessageProcessor implements Runnable {
             } else if (event.getMessage().length() > 0) {
                 eventBus.post(new OutgoingMessageEvent(event.getId(), "Your command had no effect."));
             } else if (event.getMessage().length() == 0) {
-                eventBus.post(new OutgoingMessageEvent(event.getId(), ""));
+                eventBus.post(new LookRoomEvent(event.getId()));
             }
         }
     }

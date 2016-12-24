@@ -1,4 +1,4 @@
-package org.arabellan.mud.network;
+package org.arabellan.mud.events;
 
 import lombok.Value;
 

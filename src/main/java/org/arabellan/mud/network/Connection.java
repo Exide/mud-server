@@ -20,6 +20,7 @@ import static java.nio.channels.SelectionKey.OP_READ;
 import static java.nio.channels.SelectionKey.OP_WRITE;
 import static java.util.Objects.nonNull;
 import static org.arabellan.utils.ConversionUtils.convertBufferToString;
+import static org.arabellan.utils.ConversionUtils.convertByteArrayToBuffer;
 import static org.arabellan.utils.ConversionUtils.convertByteListToByteArray;
 import static org.arabellan.utils.ConversionUtils.convertByteListToString;
 import static org.arabellan.utils.ConversionUtils.convertByteToBuffer;
@@ -202,39 +203,34 @@ public class Connection {
 
             while (buffer.hasRemaining()) {
 
-                if (isNextByte(INTERPRET_AS_COMMAND, buffer)) {
+                if (isNextByte(buffer, INTERPRET_AS_COMMAND)) {
                     log.trace("input: telnet command");
                     log.debug("From " + id + ": " + convertTelnetCommandToString(buffer));
                     ByteBuffer response = handleTelnetCommand(buffer);
                     OutgoingMessage message = new OutgoingMessage(response, true);
                     outgoingQueue.add(message);
-                } else if (isNextByte(DELETE, buffer)) {
+                } else if (isNextByte(buffer, DELETE)) {
                     log.trace("input: delete");
-                    if (!characterBuffer.isEmpty()) {
+                    if (characterBuffer.isEmpty()) {
+                        buffer.position(buffer.position() + 1);
+                    } else {
                         byte b = buffer.get();
                         characterBuffer.remove(characterBuffer.size() - 1);
                         ByteBuffer response = convertByteToBuffer(b);
                         OutgoingMessage message = new OutgoingMessage(response, true);
                         outgoingQueue.add(message);
-                    } else {
-                        buffer.position(buffer.position() + 1);
                     }
-                } else if (isNextByte(CARRIAGE_RETURN, buffer)) {
-                    log.trace("input: carriage return");
-
+                } else if (isNextBytes(buffer, CARRIAGE_RETURN, LINE_FEED)) {
+                    log.trace("input: carriage return, line feed");
                     String request = convertByteListToString(characterBuffer);
                     characterBuffer.clear();
                     incomingQueue.add(request);
                     log.debug("From " + id + ": " + request);
-
-                    byte b = buffer.get();
-                    ByteBuffer response = convertByteToBuffer(b);
-                    OutgoingMessage message = new OutgoingMessage(response, true);
-                    outgoingQueue.add(message);
-                } else if (isNextByte(LINE_FEED, buffer)) {
-                    log.trace("input: line feed");
-                    byte b = buffer.get();
-                    ByteBuffer response = convertByteToBuffer(b);
+//                    buffer.position(buffer.position() + 2);
+                    byte[] bytes = new byte[2];
+                    bytes[0] = buffer.get();
+                    bytes[1] = buffer.get();
+                    ByteBuffer response = convertByteArrayToBuffer(bytes);
                     OutgoingMessage message = new OutgoingMessage(response, true);
                     outgoingQueue.add(message);
                 } else {
@@ -264,7 +260,7 @@ public class Connection {
 
             if (message != null && message.getBuffer().hasRemaining()) {
 
-                if (isNextByte(INTERPRET_AS_COMMAND, message.getBuffer())) {
+                if (isNextByte(message.getBuffer(), INTERPRET_AS_COMMAND)) {
                     log.debug("To " + id + ": " + convertTelnetCommandToString(message.getBuffer()));
                 } else {
                     log.debug("To " + id + ": " + convertBufferToString(message.getBuffer()));
@@ -317,14 +313,34 @@ public class Connection {
         traceCollectionSize("outgoingQueue", outgoingQueue);
     }
 
-    private boolean isNextByte(byte isByte, ByteBuffer buffer) {
-        if (buffer.remaining() == 0)
-            throw new IllegalArgumentException("buffer is empty");
+    private boolean isNextByte(ByteBuffer buffer, byte matchingByte) {
+        if (!buffer.hasRemaining())
+            return false;
 
         buffer.mark();
         byte b = buffer.get();
         buffer.reset();
-        return b == isByte;
+        return b == matchingByte;
+    }
+
+    private boolean isNextBytes(ByteBuffer buffer, byte... matchingBytes) {
+        if (!buffer.hasRemaining())
+            return false;
+
+        if (buffer.remaining() < matchingBytes.length)
+            return false;
+
+        buffer.mark();
+
+        boolean bytesMatch = false;
+        for (byte b : matchingBytes) {
+            byte a = buffer.get();
+            bytesMatch = a == b;
+        }
+
+        buffer.reset();
+
+        return bytesMatch;
     }
 
     private ByteBuffer handleTelnetCommand(ByteBuffer buffer) {

@@ -3,6 +3,11 @@ package org.arabellan.mud.network;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import lombok.extern.slf4j.Slf4j;
+import org.arabellan.mud.events.BroadcastEvent;
+import org.arabellan.mud.events.GossipEvent;
+import org.arabellan.mud.events.IncomingMessageEvent;
+import org.arabellan.mud.events.LookRoomEvent;
+import org.arabellan.mud.events.OutgoingMessageEvent;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
@@ -30,6 +35,7 @@ public class SocketProcessor implements Runnable {
         this.eventBus.register(new OutgoingMessageHandler());
         this.eventBus.register(new BroadcastHandler());
         this.eventBus.register(new GossipHandler());
+        this.eventBus.register(new LookRoomHandler());
     }
 
     public void run() {
@@ -135,6 +141,15 @@ public class SocketProcessor implements Runnable {
             for (Connection connection : connectionMap.values()) {
                 connection.sendString(event.getMessage());
             }
+        }
+    }
+
+    private class LookRoomHandler {
+        @Subscribe
+        public void handle(LookRoomEvent event) {
+            log.trace("Handling LookRoomEvent");
+            Connection connection = connectionMap.get(event.getId());
+            connection.sendString("Room Name\r\nObvious exits: none");
         }
     }
 }

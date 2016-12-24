@@ -40,6 +40,13 @@ public class ConversionUtils {
         return buffer;
     }
 
+    public static ByteBuffer convertByteArrayToBuffer(byte[] bytes) {
+        ByteBuffer buffer = ByteBuffer.allocate(bytes.length);
+        buffer.put(bytes);
+        buffer.flip();
+        return buffer;
+    }
+
     public static String convertByteListToString(List<Byte> collection) {
         return new String(convertByteListToByteArray(collection));
     }
