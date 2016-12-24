@@ -101,35 +101,42 @@ public class Connection {
         traceClass();
     }
 
-    public void initialize(Selector readSelector, Selector writeSelector) {
+    void initialize(Selector readSelector, Selector writeSelector) {
         setNonBlockingMode();
         setReadSelector(readSelector);
         setWriteSelector(writeSelector);
         queueForRead();
 
-        queueTelnetOption(DONT, OPTION_ECHO);
-        queueTelnetOption(WILL, OPTION_ECHO);
-        queueTelnetOption(DO, OPTION_SUPRESS_GO_AHEAD);
-        queueTelnetOption(WILL, OPTION_SUPRESS_GO_AHEAD);
+        sendBytes(INTERPRET_AS_COMMAND, DONT, OPTION_ECHO);
+        sendBytes(INTERPRET_AS_COMMAND, WILL, OPTION_ECHO);
+        sendBytes(INTERPRET_AS_COMMAND, DO, OPTION_SUPRESS_GO_AHEAD);
+        sendBytes(INTERPRET_AS_COMMAND, WILL, OPTION_SUPRESS_GO_AHEAD);
     }
 
-    private void queueTelnetOption(byte command, byte option) {
-        ByteBuffer telnetOption = ByteBuffer.allocate(3);
-        telnetOption.put(INTERPRET_AS_COMMAND);
-        telnetOption.put(command);
-        telnetOption.put(option);
-        telnetOption.flip();
-        OutgoingMessage message = new OutgoingMessage(telnetOption, true);
+    void sendBytes(byte... bytes) {
+        ByteBuffer buffer = ByteBuffer.allocate(bytes.length);
+        buffer.put(bytes);
+        buffer.flip();
+        OutgoingMessage message = new OutgoingMessage(buffer, true);
         outgoingQueue.add(message);
+        queueForWrite();
     }
 
-    void close() {
+    void sendString(String text) {
+        ByteBuffer buffer = convertStringToBuffer(text);
+        OutgoingMessage message = new OutgoingMessage(buffer);
+        outgoingQueue.add(message);
+        queueForWrite();
+
+    }
+
+    private void close() {
         dequeueForRead();
         dequeueForWrite();
         isClosed = true;
     }
 
-    void queueForRead() {
+    private void queueForRead() {
         try {
             readSelectionKey = socketChannel.register(readSelector, OP_READ, this);
             log.trace("Connection " + id + " added read selector");
@@ -138,7 +145,7 @@ public class Connection {
         }
     }
 
-    void queueForWrite() {
+    private void queueForWrite() {
         try {
             if (writeSelectionKey == null) {
                 writeSelectionKey = socketChannel.register(writeSelector, OP_WRITE, this);
@@ -149,7 +156,7 @@ public class Connection {
         }
     }
 
-    void dequeueForRead() {
+    private void dequeueForRead() {
         if (nonNull(readSelectionKey)) {
             readSelectionKey.attach(null);
             readSelectionKey.cancel();
@@ -158,7 +165,7 @@ public class Connection {
         }
     }
 
-    void dequeueForWrite() {
+    private void dequeueForWrite() {
         if (nonNull(writeSelectionKey)) {
             writeSelectionKey.attach(null);
             writeSelectionKey.cancel();
@@ -167,7 +174,7 @@ public class Connection {
         }
     }
 
-    void setNonBlockingMode() {
+    private void setNonBlockingMode() {
         try {
             socketChannel.configureBlocking(false);
             log.debug("Connection " + id + " set to non-blocking mode");
@@ -293,8 +300,8 @@ public class Connection {
 
     private void traceClass() {
         traceCollectionSize("characterBuffer", characterBuffer);
-        traceCollectionSize("incomingQueue",incomingQueue);
-        traceCollectionSize("outgoingQueue",outgoingQueue);
+        traceCollectionSize("incomingQueue", incomingQueue);
+        traceCollectionSize("outgoingQueue", outgoingQueue);
     }
 
     private boolean isNextByte(byte isByte, ByteBuffer buffer) {
@@ -412,11 +419,4 @@ public class Connection {
         return output;
     }
 
-    public void send(String text) {
-        ByteBuffer buffer = convertStringToBuffer(text);
-        OutgoingMessage message = new OutgoingMessage(buffer);
-        outgoingQueue.add(message);
-        queueForWrite();
-
-    }
 }

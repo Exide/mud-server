@@ -114,7 +114,7 @@ public class SocketProcessor implements Runnable {
         public void handle(OutgoingMessageEvent event) {
             log.trace("Handling OutgoingMessageEvent");
             Connection connection = connectionMap.get(event.getId());
-            connection.send(event.getMessage());
+            connection.sendString(event.getMessage());
         }
     }
 
@@ -123,7 +123,7 @@ public class SocketProcessor implements Runnable {
         public void handle(BroadcastEvent event) {
             log.trace("Handling BroadcastEvent");
             for (Connection connection : connectionMap.values()) {
-                connection.send(event.getMessage());
+                connection.sendString(event.getMessage());
             }
         }
     }
@@ -133,7 +133,7 @@ public class SocketProcessor implements Runnable {
         public void handle(GossipEvent event) {
             log.trace("Handling GossipEvent");
             for (Connection connection : connectionMap.values()) {
-                connection.send(event.getMessage());
+                connection.sendString(event.getMessage());
             }
         }
     }
