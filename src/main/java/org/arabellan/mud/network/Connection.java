@@ -38,9 +38,11 @@ import static org.arabellan.utils.DebugUtils.traceCollectionSize;
 @Slf4j
 public class Connection {
 
+    private static final byte BACKSPACE = (byte) 8;
     private static final byte LINE_FEED = (byte) 10;
     private static final byte CARRIAGE_RETURN = (byte) 13;
     private static final byte SPACE = (byte) 32;
+    private static final byte DELETE = (byte) 127;
 
     private static final byte SUBNEGOTIATION_END = (byte) 240;
     private static final byte NO_OPERATION = (byte) 241;
@@ -206,6 +208,17 @@ public class Connection {
                     ByteBuffer response = handleTelnetCommand(buffer);
                     OutgoingMessage message = new OutgoingMessage(response, true);
                     outgoingQueue.add(message);
+                } else if (isNextByte(DELETE, buffer)) {
+                    log.trace("input: delete");
+                    if (!characterBuffer.isEmpty()) {
+                        byte b = buffer.get();
+                        characterBuffer.remove(characterBuffer.size() - 1);
+                        ByteBuffer response = convertByteToBuffer(b);
+                        OutgoingMessage message = new OutgoingMessage(response, true);
+                        outgoingQueue.add(message);
+                    } else {
+                        buffer.position(buffer.position() + 1);
+                    }
                 } else if (isNextByte(CARRIAGE_RETURN, buffer)) {
                     log.trace("input: carriage return");
 
