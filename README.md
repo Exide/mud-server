@@ -6,13 +6,14 @@ Free, open-source, cross platform game server.
 - non-blocking prompt (meaning you can still receive messages while in the middle of typing)
 
 ## goals for the first release
-- interface inspired by MajorMUD
+- interface inspired by [MajorMUD](http://www.majormud.com/)
 - can run anywhere that supports [Java 8](https://java.com/en/download/faq/java8.xml)
 - customizable rule set
 - customizable content
 - simple rule set + content bundle that explores the features of the server
 - import tools for loading content from various existing formats
-- extensive metric gathering
+- simple account management
+- extensive metric gathering (useful for graphing or reporting)
 
 ## post release ideas
 - ssh (username/password) support
