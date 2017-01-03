@@ -12,6 +12,7 @@ Free, open-source, cross platform game server.
 - customizable content
 - simple rule set + content bundle that explores the features of the server
 - import tools for loading content from various existing formats
+- extensive metric gathering
 
 ## post release ideas
 - ssh (username/password) support
