@@ -4,6 +4,7 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.inject.Inject;
 import java.util.regex.Matcher;
 
 @Slf4j
@@ -11,6 +12,7 @@ public class MessageProcessor implements Runnable {
 
     private final EventBus eventBus;
 
+    @Inject
     public MessageProcessor(EventBus eventBus) {
         this.eventBus = eventBus;
         this.eventBus.register(new IncomingMessageHandler());

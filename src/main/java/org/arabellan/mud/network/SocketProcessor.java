@@ -4,6 +4,7 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.inject.Inject;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -24,6 +25,7 @@ public class SocketProcessor implements Runnable {
     private Selector readSelector;
     private Selector writeSelector;
 
+    @Inject
     public SocketProcessor(Queue<Connection> connectionQueue, Map<Integer, Connection> connectionMap, EventBus eventBus) {
         this.connectionQueue = connectionQueue;
         this.connectionMap = connectionMap;

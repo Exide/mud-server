@@ -1,7 +1,9 @@
 package org.arabellan.mud.network;
 
 import lombok.extern.slf4j.Slf4j;
+import org.arabellan.mud.Configuration;
 
+import javax.inject.Inject;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
@@ -14,8 +16,9 @@ public class SocketListener implements Runnable {
     private final int port;
     private final Queue<Connection> connectionQueue;
 
-    public SocketListener(int port, Queue<Connection> connectionQueue) {
-        this.port = port;
+    @Inject
+    public SocketListener(Configuration config, Queue<Connection> connectionQueue) {
+        this.port = config.getTelnetPort();
         this.connectionQueue = connectionQueue;
     }
 
