@@ -1,12 +1,19 @@
 package org.arabellan.utils;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.List;
 
 public class ConversionUtils {
 
     public static int convertByteToInt(byte b) {
         return b & 0xFF;
+    }
+
+    public static int convertByteToInt(byte[] bytes) {
+        if (bytes.length != 1)
+            throw new IllegalArgumentException("single byte array only");
+        return convertByteToInt(bytes[0]);
     }
 
     public static byte convertIntToByte(int i) {
@@ -57,5 +64,9 @@ public class ConversionUtils {
             bytes[i] = collection.get(i);
         }
         return bytes;
+    }
+
+    public static short convertByteArrayToShort(byte[] bytes) {
+        return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getShort();
     }
 }

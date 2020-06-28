@@ -1,0 +1,56 @@
+- emote
+	access room information
+	instant message to author
+	instant message to other characters in the room
+
+- targetted emote
+	access room information
+	instant message to author
+	instant message to target
+	instant message to other characters in the room
+
+- bless
+	access room information
+	apply spell effects to author
+	instant message to author
+	instant message to other characters in the room
+
+- targetted bless
+	access room information
+	apply spell effects to target
+	instant message to author
+	instant message to target
+	instant message to other characters in the room
+
+- room spell
+	access room information
+	queue spell for combat
+	instant message to author
+	instant message to other characters in the room
+
+- targetted spell
+	access room information
+	queue spell for combat
+	instant message to author
+	instant message to target
+	instant message to other characters in the room
+
+- look
+	access room information
+	instant message to author
+
+- look item
+	access room information
+	access item information
+	instant message to author
+
+- look character
+	access room information
+	access character information
+	instant message to author
+	instant message to target
+	instant message to other characters in the room
+
+- track
+	access room information
+	instant message to author

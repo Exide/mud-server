@@ -1,24 +1,26 @@
-package org.arabellan.mud.network;
+package org.arabellan.mud;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import lombok.extern.slf4j.Slf4j;
 import org.arabellan.mud.events.BroadcastEvent;
-import org.arabellan.mud.events.GossipEvent;
+import org.arabellan.mud.events.CommandEvent;
 import org.arabellan.mud.events.IncomingMessageEvent;
-import org.arabellan.mud.events.LookRoomEvent;
 import org.arabellan.mud.events.OutgoingMessageEvent;
 
 import java.time.Duration;
 import java.time.LocalTime;
-import java.util.regex.Matcher;
+
+import static java.util.Objects.nonNull;
 
 @Slf4j
-public class MessageProcessor implements Runnable {
+public class CommandProcessor implements Runnable {
 
+    private final CommandRepository repository;
     private final EventBus eventBus;
 
-    public MessageProcessor(EventBus eventBus) {
+    public CommandProcessor(CommandRepository repository, EventBus eventBus) {
+        this.repository = repository;
         this.eventBus = eventBus;
         this.eventBus.register(new IncomingMessageHandler());
     }
@@ -42,15 +44,11 @@ public class MessageProcessor implements Runnable {
         public void handle(IncomingMessageEvent event) {
             log.trace("Handling IncomingMessageEvent");
 
-            // parse gossip messages
-            Matcher matcher = GossipEvent.GOSSIP_PATTERN.matcher(event.getMessage());
-            if (matcher.matches()) {
-                String gossip = matcher.group(1);
-                eventBus.post(new GossipEvent(event.getId(), gossip));
-            } else if (event.getMessage().length() > 0) {
+            Command command = repository.get(event.getMessage());
+            if (nonNull(command)) {
+                eventBus.post(new CommandEvent(command));
+            } else {
                 eventBus.post(new OutgoingMessageEvent(event.getId(), "Your command had no effect."));
-            } else if (event.getMessage().length() == 0) {
-                eventBus.post(new LookRoomEvent(event.getId()));
             }
         }
     }

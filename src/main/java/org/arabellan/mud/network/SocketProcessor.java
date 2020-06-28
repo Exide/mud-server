@@ -4,6 +4,7 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import lombok.extern.slf4j.Slf4j;
 import org.arabellan.mud.events.BroadcastEvent;
+import org.arabellan.mud.events.CommandEvent;
 import org.arabellan.mud.events.GossipEvent;
 import org.arabellan.mud.events.IncomingMessageEvent;
 import org.arabellan.mud.events.LookRoomEvent;
@@ -36,6 +37,7 @@ public class SocketProcessor implements Runnable {
         this.eventBus.register(new BroadcastHandler());
         this.eventBus.register(new GossipHandler());
         this.eventBus.register(new LookRoomHandler());
+        this.eventBus.register(new CommandHandler());
     }
 
     public void run() {
@@ -150,6 +152,12 @@ public class SocketProcessor implements Runnable {
             log.trace("Handling LookRoomEvent");
             Connection connection = connectionMap.get(event.getId());
             connection.sendString("Room Name\r\nObvious exits: none");
+        }
+    }
+
+    private class CommandHandler {
+        @Subscribe
+        public void handle(CommandEvent event) {
         }
     }
 }
